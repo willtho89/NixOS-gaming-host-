@@ -1,0 +1,20 @@
+# Nix / NixOS
+result
+*.nix.bak
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*~
+.junie/
+
+# Direnv
+.direnv/
+.envrc
+
+# Local / Private settings (gitignored for safety)
+**/local-settings.nix
+**/secrets.nix
+**/secrets.yaml
+**/secrets.json
