@@ -95,7 +95,7 @@ let
 
       if [ -d .git ]; then
         branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || printf 'main')"
-        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream} 2>/dev/null || printf 'origin/%s' "$branch")"
+        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || printf 'origin/%s' "$branch")"
 
         printf '\n==> Syncing repository from %s...\n' "$upstream"
         git fetch --all --prune
