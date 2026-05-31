@@ -86,6 +86,8 @@ cp hosts/gamingHost/local-settings.example.nix hosts/gamingHost/local-settings.n
 
 Because this repository currently uses an impure local-settings import, gitignored files are only visible during evaluation when you run with `--impure`. If you run commands from the repository root, the flake will automatically load `hosts/gamingHost/local-settings.nix`. You can also point to a different file with `GAMING_HOST_SETTINGS_PATH=/absolute/path/to/local-settings.nix`.
 
+`local-settings.nix` stays out of Git, but `deploy.sh` will copy it to `/etc/nixos/hosts/gamingHost/local-settings.nix` on the gaming host before rebuilding.
+
 Example `hosts/gamingHost/local-settings.nix`:
 ```nix
 { ... }:
@@ -121,7 +123,11 @@ sudo nixos-rebuild switch --impure --flake .#gamingHost
 ```
 
 ### Remote Update (from Mac/another machine)
-You can deploy updates from your Mac over SSH using the provided `deploy.sh` script. This script handles cross-architecture builds by offloading the build to your gaming machine (useful when updating from an ARM Mac to an x86_64 PC).
+You can deploy updates from your Mac over SSH using the provided `deploy.sh` script. This script:
+
+- refreshes `/etc/nixos` on the gaming host from the GitHub repo configured as your local `origin`
+- copies your local gitignored `hosts/gamingHost/local-settings.nix` to the host
+- handles cross-architecture builds by offloading the build to your gaming machine (useful when updating from an ARM Mac to an x86_64 PC)
 
 ```bash
 # Run the deployment (it will use the default IP and user)
@@ -145,6 +151,15 @@ nix run nixpkgs#nixos-rebuild -- \
   --target-host "${DEPLOY_USER}@${DEPLOY_HOST}" \
   --sudo
 ```
+
+### Host-Side Self-Update Button
+The desktop shortcut **Update System and Packages** does this on the gaming host:
+
+1. resets `/etc/nixos` to the latest commit from its tracked Git branch
+2. runs `nix flake update`
+3. rebuilds the system with `switch`, or falls back to `boot` if a live switch is blocked
+
+This means Git-tracked config comes from GitHub, while `local-settings.nix` continues to come from your latest `deploy.sh` run.
 
 ---
 

@@ -93,6 +93,18 @@ let
 
       cd /etc/nixos
 
+      if [ -d .git ]; then
+        branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || printf 'main')"
+        upstream="$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream} 2>/dev/null || printf 'origin/%s' "$branch")"
+
+        printf '\n==> Syncing repository from %s...\n' "$upstream"
+        git fetch --all --prune
+        git reset --hard "$upstream"
+        git clean -fd
+      else
+        printf '\n==> /etc/nixos is not a git checkout; skipping repository sync.\n'
+      fi
+
       printf '\n==> Updating flake inputs...\n'
       sudo nix flake update
 
@@ -114,7 +126,7 @@ let
     name = "gaminghost-update-system";
     desktopName = "Update System and Packages";
     genericName = "NixOS system updater";
-    comment = "Update flake inputs and rebuild this gaming host";
+    comment = "Pull the repo, update flake inputs, and rebuild this gaming host";
     exec = "gaminghost-update-system";
     terminal = true;
     categories = [ "System" "Settings" ];

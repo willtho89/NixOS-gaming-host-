@@ -8,6 +8,7 @@ result
 *.swp
 *~
 .junie/
+.codegraph/
 
 # Direnv
 .direnv/
