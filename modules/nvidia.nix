@@ -22,18 +22,24 @@
     # Experimental and only works on modern Nvidia GPUs (Turing or newer).
     powerManagement.finegrained = false;
 
-    # Use the NVidia open source kernel module (not to be confused with the
-    # nouveau open source driver).
-    # This is available on RTX 20 series and newer.
-    # Recommended for RTX 40 series.
-    open = true;
+    # Prefer the proprietary kernel module for Proton/DX12 stability.
+    open = false;
 
     # Enable the Nvidia settings menu,
 	# accessible via `nvidia-settings`.
-    nvidiaSettings = true;
+    nvidiaSettings = false;
 
-    # Track the newest packaged driver branch for a more up-to-date gaming stack.
-    package = config.boot.kernelPackages.nvidiaPackages.latest;
+    # 007 First Light hits an NVIDIA 595-series Xid 109 timeout bug on Linux.
+    # NVIDIA says this is fixed in 610.43.02+, so pin that branch manually.
+    package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
+      version = "610.43.02";
+      sha256_64bit = "sha256-MDSgVLtM33dS/43CclZMsQVROAS/9TU4lFkBsWyndGM=";
+      openSha256 = lib.fakeHash;
+      settingsSha256 = lib.fakeHash;
+      persistencedSha256 = lib.fakeHash;
+      useSettings = false;
+      usePersistenced = false;
+    };
   };
 
   boot.kernelParams = [ "nvidia-drm.fbdev=1" ];

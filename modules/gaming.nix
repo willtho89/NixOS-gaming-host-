@@ -142,8 +142,9 @@ in
       extraProfile = ''
         if [ "''${SteamAppId:-}" = "3768760" ]; then
           export PROTON_VKD3D_HEAP=1
-          export VKD3D_CONFIG=no_async_compute,no_upload_hvv
+          export VKD3D_CONFIG=no_async_compute,no_upload_hvv,single_queue
           export VKD3D_DISABLE_EXTENSIONS=VK_EXT_mesh_shader,VK_NV_raw_access_chains
+          export VKD3D_SHADER_CACHE_PATH=0
         fi
       '';
       extraLibraries = p: with p; [
@@ -186,7 +187,8 @@ in
     opencode
     pavucontrol
     protonup-qt # Manage Proton-GE versions easily
-    bottles # For non-Steam games/launchers
+    # Temporarily disabled because newer nixpkgs revisions currently fail to
+    # build it via openldap tests, and we want to keep driver updates deployable.
     pulseaudio
     steam-run # Useful for running random binaries
     vim
