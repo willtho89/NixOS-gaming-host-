@@ -79,62 +79,68 @@ let
     '';
   };
 
-  # A small wrapper script to start Steam with environment checks
-  # This avoids the "Unable to open a connection to X" error during autostart
-  steamAutostart = pkgs.writeShellScriptBin "steam-autostart" ''
-    # Wait up to 30 seconds for a display to be available in the systemd user session
-    # and for the X server to be actually accepting connections.
-    LOG="/tmp/steam-autostart.log"
-    echo "Starting steam-autostart at $(date)" > "$LOG"
-    
-    for i in {1..60}; do
-      ENV=$(systemctl --user show-environment)
-      if echo "$ENV" | grep -E -q "^(WAYLAND_DISPLAY|DISPLAY)="; then
-        echo "Found display variables in systemd environment at attempt $i" >> "$LOG"
-        
-        # Export relevant environment variables from systemd to this process
-        while read -r line; do
-          if [[ "$line" =~ ^(DISPLAY|WAYLAND_DISPLAY|XDG_RUNTIME_DIR|XAUTHORITY|XDG_SESSION_TYPE|XDG_CURRENT_DESKTOP|KDE_FULL_SESSION|GBM_BACKEND|NVD_BACKEND|__GLX_VENDOR_LIBRARY_NAME|LIBVA_DRIVER_NAME)= ]]; then
-            echo "Exporting $line" >> "$LOG"
-            export "$line"
-          fi
-        done <<EOF
-$ENV
-EOF
+  gaminghostUpdateSystem = pkgs.writeShellApplication {
+    name = "gaminghost-update-system";
+    runtimeInputs = with pkgs; [
+      coreutils
+      git
+      nix
+      nixos-rebuild
+      sudo
+    ];
+    text = ''
+      set -euo pipefail
 
-        # If we have a DISPLAY, wait for it to be actually functional
-        if [ -n "''${DISPLAY:-}" ]; then
-          if ${pkgs.xrandr}/bin/xrandr >/dev/null 2>&1; then
-            echo "X display is ready and functional. Launching Steam." >> "$LOG"
-            exec steam -silent "$@"
-          else
-            echo "X display is set but not yet functional (xrandr failed)." >> "$LOG"
-          fi
-        else
-          # If we only have WAYLAND_DISPLAY, Steam will start Xwayland anyway
-          echo "Only Wayland display found. Launching Steam." >> "$LOG"
-          exec steam -silent "$@"
-        fi
+      cd /etc/nixos
+
+      printf '\n==> Updating flake inputs...\n'
+      sudo nix flake update
+
+      printf '\n==> Applying updated system...\n'
+      if sudo nixos-rebuild switch --impure --flake .#gamingHost; then
+        printf '\nUpdate finished. Reboot is recommended when the kernel, graphics driver, or core services changed.\n'
+      else
+        printf '\nSwitch failed, staging the update for the next boot instead...\n'
+        sudo nixos-rebuild boot --impure --flake .#gamingHost
+        printf '\nUpdate staged for next boot. Please reboot to finish applying it.\n'
       fi
-      sleep 0.5
-    done
-    
-    echo "Timed out waiting for functional display. Launching Steam anyway as fallback." >> "$LOG"
-    exec steam -silent "$@"
-  '';
+
+      printf 'You can close this window now.\n'
+      read -r -p 'Press Enter to exit...'
+    '';
+  };
+
+  gaminghostUpdateDesktopItem = pkgs.makeDesktopItem {
+    name = "gaminghost-update-system";
+    desktopName = "Update System and Packages";
+    genericName = "NixOS system updater";
+    comment = "Update flake inputs and rebuild this gaming host";
+    exec = "gaminghost-update-system";
+    terminal = true;
+    categories = [ "System" "Settings" ];
+    icon = "system-software-update";
+  };
+
 in
 {
   # Steam configuration
   programs.steam = {
     enable = true;
     package = pkgs.steam.override {
+      extraProfile = ''
+        if [ "''${SteamAppId:-}" = "3768760" ]; then
+          export PROTON_VKD3D_HEAP=1
+          export VKD3D_CONFIG=no_async_compute,no_upload_hvv
+          export VKD3D_DISABLE_EXTENSIONS=VK_EXT_mesh_shader,VK_NV_raw_access_chains
+        fi
+      '';
       extraLibraries = p: with p; [
         freetype
       ];
     };
     # Open ports in the firewall for Steam Remote Play
     remotePlay.openFirewall = true;
-    # Open ports in the firewall for Steam Local Network Game Transfers
+    # Open ports for Steam local network transfers.
     dedicatedServer.openFirewall = true;
     # Enable the Steam display-manager session that launches through Gamescope
     # This remains available as an option in the login screen.
@@ -146,21 +152,6 @@ in
       ];
     };
   };
-
-  # Autostart Steam in the background (minimized) when the graphical session starts
-  # We use a wrapper script to ensure the display environment is ready.
-  # We also restrict it to common desktop environments to avoid running in the gamescope session.
-  environment.etc."xdg/autostart/steam.desktop".text = ''
-    [Desktop Entry]
-    Name=Steam
-    Comment=Application for managing and playing games on Steam
-    Exec=steam-autostart
-    Icon=steam
-    Terminal=false
-    Type=Application
-    Categories=Network;FileTransfer;Game;
-    OnlyShowIn=KDE;GNOME;XFCE;
-  '';
 
   # Enable gamescope compositor with cap_sys_nice for better performance
   programs.gamescope.enable = true;
@@ -178,14 +169,16 @@ in
 
     # Compatibility and performance
     bitwarden-desktop
+    codex
     gamescope
+    opencode
     pavucontrol
     protonup-qt # Manage Proton-GE versions easily
     bottles # For non-Steam games/launchers
     pulseaudio
     steam-run # Useful for running random binaries
+    vim
     vkbasalt # Vulkan post-processing layer
-    steamAutostart
 
     # Debug tools for displays
     wlr-randr
@@ -200,7 +193,18 @@ in
         pkill -u $USER -9 steam
       fi
     '')
+    gaminghostUpdateSystem
+    gaminghostUpdateDesktopItem
   ];
+
+  system.activationScripts.gaminghostDesktopShortcut = lib.stringAfter [ "users" ] ''
+    desktop_dir="/home/${settings.username}/Desktop"
+    desktop_file="$desktop_dir/Update System and Packages.desktop"
+    mkdir -p "$desktop_dir"
+    cp ${gaminghostUpdateDesktopItem}/share/applications/gaminghost-update-system.desktop "$desktop_file"
+    chown ${settings.username}:users "$desktop_file"
+    chmod 0755 "$desktop_file"
+  '';
 
   # Better controller support
   hardware.bluetooth.enable = true;

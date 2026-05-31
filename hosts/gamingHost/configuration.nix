@@ -16,8 +16,17 @@ in
   ];
 
   # Nix and Nixpkgs settings
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+
+    # Keep builds parallel without oversubscribing evaluation itself.
+    max-jobs = 4;
+    cores = 0;
+  };
   nixpkgs.config.allowUnfree = true;
+
+  # Give local rebuilds some breathing room on machines without disk swap.
+  zramSwap.enable = true;
 
   # Pass settings to all modules
   _module.args.settings = settings;
@@ -33,7 +42,11 @@ in
   # Enable OpenSSH for remote updates/management
   services.openssh = {
     enable = true;
-    settings.PasswordAuthentication = true; # Allow password auth initially
+    settings = {
+      PasswordAuthentication = settings.sshPasswordAuthentication;
+      KbdInteractiveAuthentication = settings.sshPasswordAuthentication;
+      PermitRootLogin = "no";
+    };
     openFirewall = true;
   };
 
@@ -65,26 +78,24 @@ in
   users.users.${settings.username} = {
     isNormalUser = true;
     extraGroups = [ "networkmanager" "wheel" "video" "render" "input" ];
-    # Use a hashed password or change it via `passwd` after install
-    initialPassword = settings.initialPassword;
     openssh.authorizedKeys.keys = settings.authorizedKeys;
+  } // lib.optionalAttrs (settings.initialPassword != null) {
+    initialPassword = settings.initialPassword;
   };
 
-  security.sudo.wheelNeedsPassword = false;
+  security.sudo.wheelNeedsPassword = settings.wheelNeedsPassword;
 
-  # Graphical Environment - KDE Plasma is great for gaming machine management
-  # but we will default to Gamescope Session for the "Steam Machine" feel.
+  # Graphical Environment - KDE Plasma remains the default desktop session.
+  # The Steam Gamescope session is also available from the login screen.
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
   
-  # Auto-login for that "Console" experience
-  services.displayManager.autoLogin.enable = true;
+  # Optional auto-login for an appliance-style setup.
+  services.displayManager.autoLogin.enable = settings.enableAutoLogin;
   services.displayManager.autoLogin.user = settings.username;
-  services.displayManager.sddm.autoLogin.relogin = true;
-  services.getty.autologinUser = settings.username;
+  services.displayManager.sddm.autoLogin.relogin = settings.enableAutoLogin;
   
-  # Set default session to the Plasma session for a desktop experience
-  # This can be changed back to the Steam Gamescope session in the login screen if needed.
+  # Plasma is the default session; Steam Gamescope can be selected in SDDM.
   services.displayManager.defaultSession = "plasma";
 
   # Sound
@@ -97,6 +108,10 @@ in
     jack.enable = true;
   };
 
-  # System state version
-  system.stateVersion = "25.11"; # This matches the current NixOS version
+  # Set this once when the machine is first installed; do not bump casually.
+  system.stateVersion = "25.11";
+}
+
+// lib.optionalAttrs settings.enableTTYAutoLogin {
+  services.getty.autologinUser = settings.username;
 }

@@ -32,8 +32,8 @@
 	# accessible via `nvidia-settings`.
     nvidiaSettings = true;
 
-    # Optionally, you may need to select the appropriate driver version for your specific GPU.
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    # Track the newest packaged driver branch for a more up-to-date gaming stack.
+    package = config.boot.kernelPackages.nvidiaPackages.latest;
   };
 
   boot.kernelParams = [ "nvidia-drm.fbdev=1" ];

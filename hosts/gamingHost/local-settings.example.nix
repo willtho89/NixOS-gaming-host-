@@ -7,7 +7,12 @@
   ];
 
   # Optional overrides
-  # initialPassword = "change-me-immediately";
+  # initialPassword = "one-time-bootstrap-password";
+  # sshPasswordAuthentication = true; # only if you need password-based SSH during bootstrap
+  # wheelNeedsPassword = false; # convenience tradeoff, not recommended on shared networks
+  # enableAutoLogin = true; # console-style appliance mode
+  # enableTTYAutoLogin = true; # local TTY autologin
+  # enableSunshine = true; # only enable when you actually use streaming
   # timeZone = "Europe/Berlin";
   # defaultLocale = "de_DE.UTF-8";
   # consoleKeyMap = "de";

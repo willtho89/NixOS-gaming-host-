@@ -1,14 +1,14 @@
 # NixOS Gaming Host (2026 Edition)
 
-This repository contains a modular NixOS configuration optimized for a high-end gaming PC featuring an **Nvidia RTX 4080** and an **AMD Ryzen CPU**. It is designed to provide a "Steam Machine" experience by booting directly into Steam Big Picture Mode via Gamescope.
+This repository contains a modular NixOS configuration optimized for a high-end gaming PC featuring an **Nvidia RTX 4080** and an **AMD Ryzen CPU**. It defaults to **KDE Plasma 6** while also offering a **Steam Gamescope** session from the login screen.
 
 ## Features
-- **Nvidia 4080 Optimized**: Uses the latest `open` kernel module, `fbdev=1` for smooth Wayland boot, and direct VA-API backend.
-- **Steam Deck Experience**: Configured to boot into the `steam` display-manager session, which launches Steam Big Picture through Gamescope for a seamless console-like UI.
+- **Nvidia 4080 Optimized**: Uses the latest `open` kernel module and `fbdev=1` for smooth Wayland boot.
+- **Desktop + Console Modes**: Defaults to Plasma, with the `steam` display-manager session available for a Steam Deck-like experience when wanted.
 - **Sunshine/Moonlight Support**: Pre-configured for low-latency game streaming to other devices.
 - **AMD Ryzen Performance**: Enabled microcode updates and `kvm-amd` support.
 - **Portability Layers**: Includes Steam (Proton), `ProtonUp-Qt`, and `Bottles`.
-- **Auto-Updates**: Configured to check for updates daily and specifically on **shutdown**. Uses the "boot" method to ensure zero interruption during gaming sessions.
+- **Pinned Auto-Rebuilds**: Configured to rebuild daily from the currently pinned flake revision using the `boot` method, so the next boot picks up the prepared generation.
 
 ---
 
@@ -84,7 +84,7 @@ Start from the committed example file:
 cp hosts/gamingHost/local-settings.example.nix hosts/gamingHost/local-settings.nix
 ```
 
-Because this repository uses flakes, gitignored files are only visible during evaluation when you run with `--impure`. If you run commands from the repository root, the flake will automatically load `hosts/gamingHost/local-settings.nix`. You can also point to a different file with `GAMING_HOST_SETTINGS_PATH=/absolute/path/to/local-settings.nix`.
+Because this repository currently uses an impure local-settings import, gitignored files are only visible during evaluation when you run with `--impure`. If you run commands from the repository root, the flake will automatically load `hosts/gamingHost/local-settings.nix`. You can also point to a different file with `GAMING_HOST_SETTINGS_PATH=/absolute/path/to/local-settings.nix`.
 
 Example `hosts/gamingHost/local-settings.nix`:
 ```nix
@@ -95,6 +95,11 @@ Example `hosts/gamingHost/local-settings.nix`:
   authorizedKeys = [
     "ssh-ed25519 AAAA... replace-me"
   ];
+  # Optional bootstrap-only settings:
+  # initialPassword = "one-time-bootstrap-password";
+  # sshPasswordAuthentication = true;
+  # enableAutoLogin = true;
+  # enableSunshine = true;
 }
 ```
 
@@ -146,12 +151,18 @@ nix run nixpkgs#nixos-rebuild -- \
 ## 💡 Post-Installation Tips
 
 ### 1. Set Your Password
-The default initial password is `changeme`. Log in and change it immediately:
+If you set `initialPassword` in `hosts/gamingHost/local-settings.nix` for bootstrap access, log in and change it immediately:
 ```bash
 passwd
 ```
 
 ### 2. Configure Sunshine (Streaming)
+Sunshine is disabled by default. Enable it in `hosts/gamingHost/local-settings.nix` when needed:
+
+```nix
+enableSunshine = true;
+```
+
 Access the Sunshine web UI to pair your Moonlight client:
 - **URL**: `https://localhost:47990` (or the machine's IP address)
 - **Login**: Use the credentials you set during the first run in the web UI.
@@ -164,9 +175,9 @@ While in the Steam Big Picture UI, go to the **Power** menu and select **Exit to
 
 ### 5. Automatic Updates
 The system is configured to stay up-to-date automatically:
-- **Background Check**: A daily task checks for updates in the background. It uses low priority (idle) to avoid causing lag in games.
-- **Update on Shutdown**: When you turn off or reboot the machine, it will perform a final check for updates and prepare them.
-- **Next Boot Activation**: Updates use the `boot` operation, meaning they are built and prepared while you are using the machine (or shutting down), and are applied the next time you start the computer. This ensures no interruptions while you are gaming.
+- **Background Rebuild**: A daily task rebuilds the system from the currently pinned flake revision using low CPU and I/O priority.
+- **Next Boot Activation**: Updates use the `boot` operation, meaning the prepared generation becomes active on the next startup.
+- **Pin First, Deploy Second**: Update `flake.lock` intentionally, then let the host rebuild that pinned revision.
 - **Clean Up**: Old generations older than 7 days are automatically removed weekly to save disk space.
 
 ---

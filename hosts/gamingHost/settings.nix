@@ -8,15 +8,22 @@ in
   hostname = localSettings.hostname or "gamingHost";
   username = localSettings.username or "nixos"; # Change to your preferred username
   
-  # The initial password for the user. 
-  # It's recommended to change it via `passwd` after first login.
-  initialPassword = localSettings.initialPassword or "changeme";
+  # Optional bootstrap password for first login.
+  # Prefer SSH keys and leave this unset when possible.
+  initialPassword = localSettings.initialPassword or null;
 
   # SSH Authorized Keys
   # Replace with your own public keys in local-settings.nix
   authorizedKeys = localSettings.authorizedKeys or [
     # "ssh-rsa AAAAB3NzaC1..." 
   ];
+
+  # Harden defaults for a networked host.
+  sshPasswordAuthentication = localSettings.sshPasswordAuthentication or false;
+  wheelNeedsPassword = localSettings.wheelNeedsPassword or true;
+  enableAutoLogin = localSettings.enableAutoLogin or false;
+  enableTTYAutoLogin = localSettings.enableTTYAutoLogin or false;
+  enableSunshine = localSettings.enableSunshine or false;
 
   # Time and Locale
   timeZone = localSettings.timeZone or "Europe/Berlin";

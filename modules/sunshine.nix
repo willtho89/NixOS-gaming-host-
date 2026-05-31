@@ -93,11 +93,11 @@ let
     '';
   };
 in
-{
+lib.mkIf settings.enableSunshine {
   # Enable Sunshine streaming server
   services.sunshine = {
     enable = true;
-    autoStart = true; # Start on boot
+    autoStart = true; # Start on boot when explicitly enabled
     capSysAdmin = true; # Required for some features
     openFirewall = true; # Automatically open required ports
   };
