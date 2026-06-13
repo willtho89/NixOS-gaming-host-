@@ -12,6 +12,7 @@
     let
       envLocalSettingsPath = builtins.getEnv "GAMING_HOST_SETTINGS_PATH";
       pwd = builtins.getEnv "PWD";
+      hostLocalSettingsPath = /etc/nixos/hosts/gamingHost/local-settings.nix;
       inferredLocalSettingsPath =
         if pwd == "" then
           null
@@ -23,6 +24,8 @@
             throw "GAMING_HOST_SETTINGS_PATH must be an absolute path"
           else
             /. + envLocalSettingsPath
+        else if builtins.pathExists hostLocalSettingsPath then
+          hostLocalSettingsPath
         else if inferredLocalSettingsPath != null && builtins.pathExists inferredLocalSettingsPath then
           inferredLocalSettingsPath
         else
