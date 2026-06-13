@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, ... }:
 
 {
   # Enable OpenGL/Vulkan (now renamed to hardware.graphics)
@@ -30,16 +30,8 @@
     nvidiaSettings = false;
 
     # 007 First Light hits an NVIDIA 595-series Xid 109 timeout bug on Linux.
-    # NVIDIA says this is fixed in 610.43.02+, so pin that branch manually.
-    package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "610.43.02";
-      sha256_64bit = "sha256-MDSgVLtM33dS/43CclZMsQVROAS/9TU4lFkBsWyndGM=";
-      openSha256 = lib.fakeHash;
-      settingsSha256 = lib.fakeHash;
-      persistencedSha256 = lib.fakeHash;
-      useSettings = false;
-      usePersistenced = false;
-    };
+    # Track nixpkgs' latest packaged NVIDIA driver now that it includes 610.43.02+.
+    package = config.boot.kernelPackages.nvidiaPackages.latest;
   };
 
   boot.kernelParams = [ "nvidia-drm.fbdev=1" ];

@@ -181,7 +181,8 @@ in
     goverlay # UI for MangoHud
 
     # Compatibility and performance
-    bitwarden-desktop
+    # Temporarily disabled until nixpkgs updates it to a supported Electron.
+    # The current package depends on insecure electron-39.
     codex
     gamescope
     opencode
