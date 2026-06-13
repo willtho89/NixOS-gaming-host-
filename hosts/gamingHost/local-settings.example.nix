@@ -7,6 +7,7 @@
   ];
 
   # Optional overrides
+  # allowBootstrapDefaults = true; # only for temporary first-install/bootstrap use
   # initialPassword = "one-time-bootstrap-password";
   # sshPasswordAuthentication = true; # only if you need password-based SSH during bootstrap
   # wheelNeedsPassword = false; # convenience tradeoff, not recommended on shared networks

@@ -86,6 +86,8 @@ cp hosts/gamingHost/local-settings.example.nix hosts/gamingHost/local-settings.n
 
 Because this repository currently uses an impure local-settings import, gitignored files are only visible during evaluation when you run with `--impure`. If you run commands from the repository root, the flake will automatically load `hosts/gamingHost/local-settings.nix`. You can also point to a different file with `GAMING_HOST_SETTINGS_PATH=/absolute/path/to/local-settings.nix`.
 
+Rebuilds now fail fast if local settings are missing, or if `username` / `authorizedKeys` are omitted, instead of silently falling back to the bootstrap `nixos` user. If you intentionally want bootstrap defaults for a first install, set `allowBootstrapDefaults = true;` in `local-settings.nix`.
+
 `local-settings.nix` stays out of Git, but `deploy.sh` will copy it to `/etc/nixos/hosts/gamingHost/local-settings.nix` on the gaming host before rebuilding.
 
 Example `hosts/gamingHost/local-settings.nix`:

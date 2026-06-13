@@ -30,9 +30,15 @@
           inferredLocalSettingsPath
         else
           null;
+      localSettingsError = ''
+        Missing gamingHost local settings.
+
+        Create hosts/gamingHost/local-settings.nix from hosts/gamingHost/local-settings.example.nix,
+        or set GAMING_HOST_SETTINGS_PATH to an absolute path.
+      '';
       gamingHostLocalSettings =
         if localSettingsPath == null then
-          {}
+          throw localSettingsError
         else
           import localSettingsPath { lib = nixpkgs.lib; };
     in
